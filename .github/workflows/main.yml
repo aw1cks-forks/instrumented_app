@@ -1,0 +1,44 @@
+name: Build
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: BuildKit
+        uses: docker/setup-buildx-action@v1
+        
+      - name: Login to quay.io
+        uses: docker/login-action@v1
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+          
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            quay.io/aw1cks/instrumented_app:latest
+          
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
